@@ -1,0 +1,17 @@
+{
+  "name": "find-my-friends-api",
+  "version": "1.0.0",
+  "description": "Unofficial API for accessing Find My Friends through iCloud.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "request": "^2.83.0",
+    "request-promise": "^4.2.2",
+    "uuid": "^3.2.1"
+  }
+}
