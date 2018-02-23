@@ -6,105 +6,156 @@ var uuid = require('uuid/v1');
 
 module.exports = class FindMyFriends {
     constructor() {
-
+        this.pid = "18AProject103";
+        this.fcbn = "18AHotfix13";
+        this.cid = uuid().toUpperCase();
+        this.cmn = "18A91";
+        this.dsid = "610001744";
+        this.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+        this.webservices = [];
+        this.fmfPayload = {};
     }
 
-
-    login(email, password, cb) {
-        if (email && password) {
-            var options = {
-                method: 'POST',
-                uri: 'https://idmsa.apple.com/appleauth/auth/signin',
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json, text/javascript',
-                    'X-Apple-Widget-Key': '83545bf919730e51dbfba24e7e8a78d2',
-                    'Connection': 'keep-alive'
-                },
-                json: true,
-                body: {
-                    accountName: email,
-                    password: password,
-                    rememberMe: true
-                }
+    async login(email, password) {
+            if (email && password) {
+                var validate = await this.validate();
+                await this.signin(validate.login, email, password);
+                await this.initFmf();
             }
-
-            r(options)
-                .then((res) => {
-                    var opt = {
-                        method: 'POST',
-                        uri: 'https://setup.icloud.com/setup/ws/1/accountLogin?clientBuildNumber=18AProject103&clientId=CD40A862-DAE1-4410-B897-F3EA2D12BDDF&clientMasteringNumber=18A91',
-                        headers: {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
-                            'Connection': 'keep-alive',
-                            'Origin': 'https://www.icloud.com'
-                        },
-                        body: {
-                            accountCountryCode: 'NOR',
-                            dsWebAuthToken: res.headers['X-Apple-Session-Token'],
-                            extended_login: false,
-                            apple_id: email,
-                            password: password
-                        },
-                        json: true
-                    }
-                    r(opt).then((res) => {
-                        cb(res.headers['set-cookie']);
-                    });
-                })
-        }
     }
 
-    find(cookie, cb) {
-        var opts = {
+    validate() {
+        var validate = {
             method: 'POST',
-            uri: 'https://p16-fmfweb.icloud.com/fmipservice/client/fmfWeb/selFriend/refreshClient?clientBuildNumber=18AHotfix13&clientMasteringNumber=18AHotfix13&clientId=CA882614-51ED-4DC9-AD5D-15971E1E099D&dsid=610001744',
+            uri: `https://setup.icloud.com/setup/ws/1/validate?clientBuildNumber=${this.pid}&clientId=${this.cid}&clientMasteringNumber=${this.cmn}`,
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
+                'Connection': 'keep-alive',
                 'Origin': 'https://www.icloud.com',
-                'Referer': 'https://www.icloud.com/applications/fmf/current/en-us/index.html?',
-                'Cookie': cookie
+                'Referer': 'https://www.icloud.com',
+                'User-Agent': this.userAgent
             },
             json: true
         }
 
-        r(opts)
-            .then((res) => {
-                var opt = {
-                    method: 'POST',
-                    uri: 'https://p16-fmfweb.icloud.com/fmipservice/client/fmfWeb/selFriend/refreshClient?clientBuildNumber=18AHotfix13&clientMasteringNumber=18AHotfix13&clientId=CA882614-51ED-4DC9-AD5D-15971E1E099D&dsid=610001744',
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
-                        'Origin': 'https://www.icloud.com',
-                        'Referer': 'https://www.icloud.com/applications/fmf/current/en-us/index.html?',
-                        'Cookie': cookie
-                    },
-                    body: {
-                        clientContext: {
-                            appVersion: '1.0',
-                            contextApp: 'com.icloud.web.fmf',
-                            mapkitAvailable: true,
-                            productType: 'fmfWeb',
-                            selectedFriend: 'MTg3MDI1OTYwMg~~',
-                            tileServer: 'Apple',
-                            userInactivityTimeInMS: 129773,
-                            windowInFocus: false,
-                            windowVisible: true
-                        },
-                        dataContext: res.body['dataContext'],
-                        serverContext: res.body['server-context']
-                    },
-                    json: true
+        return new Promise(resolve => {
+            r(validate).then(res => {
+                var obj = {
+                    login: res.body["configBag"]["urls"]["accountLogin"],
+                    widgetKey: res.body["configBag"]["urls"]["accountLoginUI"].split("=")[1],
                 }
-
-                setInterval(() => {
-                    r(opt) 
-                        .then((res) => {
-                            cb(res);
-                        });
-                }, 5000)
+                resolve(obj);
             })
+        });
     }
 
+
+    signin(uri, email, password) {
+        var signin = {
+            method: 'POST',
+            uri: `${uri}?clientBuildNumber=${this.pid}&clientId=${this.cid}&clientMasteringNumber=${this.cmn}`,
+            headers: {
+                'Connection': 'keep-alive',
+                'Origin': 'https://www.icloud.com',
+                'Referer': 'https://www.icloud.com',
+                'User-Agent': this.userAgent,
+            },
+            body: {
+                accountName: email,
+                apple_id: email,
+                password: password,
+                rememberMe: true,
+                trustTokens: {}
+            },
+            json: true
+        }
+
+        return new Promise(resolve => {
+            r(signin).then(res => {
+                
+
+                if (!res.body.hasOwnProperty("error")) {
+                    this.webservices = res.body["webservices"];
+                    resolve(res.body);
+                } else {
+                    reject("Login failed. Incorrect email/password?");
+                }
+            })
+        });
+    }
+
+    initFmf() {
+        var init = {
+            method: 'POST',
+            uri: `${this.webservices["fmf"]["url"].split(":443")[0]}/fmipservice/client/fmfWeb/initClient?clientBuildNumber=${this.fcbn}&clientMasteringNumber=${this.fcbn}&clientId=${this.cid}&dsid=${this.dsid}`,
+            headers: {
+                'Connection': 'keep-alive',
+                'Origin': 'https://www.icloud.com',
+                'Referer': 'https://www.icloud.com/applications/fmf/current/en-us/index.html?',
+                'User-Agent': this.userAgent
+            },
+            json: true
+        }
+
+        return new Promise(resolve => {
+            r(init).then(res => {
+                this.fmfPayload = {
+                    clientContext: {
+                        appVersion: '1.0',
+                        contextApp: 'com.icloud.web.fmf',
+                        mapkitAvailable: true,
+                        productType: 'fmfWeb',
+                        tileServer: 'Apple',
+                        userInactivityTimeInMS: 129773,
+                        windowInFocus: false,
+                        windowVisible: true
+                    },
+                    dataContext: res.body["dataContext"],
+                    serverContext: res.body["serverContext"]
+                }
+                resolve();
+            });
+        });
+    }
+
+    getAllLocations() {
+        var refresh = {
+            method: 'POST',
+            uri: `${this.webservices["fmf"]["url"].split(":443")[0]}/fmipservice/client/fmfWeb/refreshClient?clientBuildNumber=${this.fcbn}&clientMasteringNumber=${this.fcbn}&clientId=${this.cid}&dsid=${this.dsid}`,
+            headers: {
+                'Connection': 'keep-alive',
+                'Origin': 'https://www.icloud.com',
+                'Referer': 'https://www.icloud.com/applications/fmf/current/en-us/index.html?',
+                'User-Agent': this.userAgent,
+                'Cache-Control': 'no-cache'
+            },
+            body: {
+                clientContext: this.fmfPayload["clientContext"],
+                dataContext: this.fmfPayload["dataContext"],
+                serverContext: this.fmfPayload["serverContext"]
+            },
+            json: true
+        }
+
+        return new Promise(resolve => {
+            r(refresh).then(res => {
+                this.fmfPayload["dataContext"] = res.body["dataContext"];
+                this.fmfPayload["serverContext"] = res.body["serverContext"];
+                resolve(res.body["locations"])
+            });
+        });
+    }
+
+    async getLocationById(id) {
+        var allLocations = await this.getAllLocations();
+        return new Promise(resolve => {
+            for (var loc in allLocations) {
+                if (allLocations[loc]['id'] == id) {
+                    console.log(allLocations[loc]);
+                    return allLocations[loc];
+                }
+            }
+            return null;
+        });
+    }
+    
 }
