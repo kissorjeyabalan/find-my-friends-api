@@ -10,7 +10,7 @@ module.exports = class FindMyFriends {
     }
 
 
-    login(email, password) {
+    login(email, password, cb) {
         if (email && password) {
             var options = {
                 method: 'POST',
@@ -50,13 +50,13 @@ module.exports = class FindMyFriends {
                         json: true
                     }
                     r(opt).then((res) => {
-                        this.ping(res.headers['set-cookie']);
+                        cb(res.headers['set-cookie']);
                     });
                 })
         }
     }
 
-    ping(cookie) {
+    find(cookie, cb) {
         var opts = {
             method: 'POST',
             uri: 'https://p16-fmfweb.icloud.com/fmipservice/client/fmfWeb/selFriend/refreshClient?clientBuildNumber=18AHotfix13&clientMasteringNumber=18AHotfix13&clientId=CA882614-51ED-4DC9-AD5D-15971E1E099D&dsid=610001744',
@@ -100,7 +100,9 @@ module.exports = class FindMyFriends {
 
                 setInterval(() => {
                     r(opt) 
-                        .then((res) => console.log(res.body['locations']));
+                        .then((res) => {
+                            cb(res);
+                        });
                 }, 5000)
             })
     }
