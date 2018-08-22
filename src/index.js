@@ -151,10 +151,10 @@ module.exports = class FindMyFriends {
             for (var loc in allLocations) {
                 if (allLocations[loc]['id'] == id) {
                     console.log(allLocations[loc]);
-                    return allLocations[loc];
+                    resolve(allLocations[loc]);
                 }
             }
-            return null;
+            resolve(undefined);
         });
     }
     
